@@ -3,99 +3,91 @@
 #     "transformers==5.2.0",
 #     "torch==2.10.0",
 #     "scikit-learn",
-#     "polars",
-#     "httpx",
+#     "datasets",
 # ]
 # requires-python = ">=3.12"
 # ///
 
-import io
-import httpx
-import polars
 from transformers import pipeline
+from datasets import load_dataset
 from sklearn.metrics import f1_score, accuracy_score, classification_report
 
-pipe = pipeline("text-classification", model="liaad/PtVId", top_k=None)
+LABEL2ID = {"PT-PT": 0, "PT-BR": 1}
+
+MODELS = [
+    ("liaad/PtVId", "PtVId (bert-large)"),
+    ("liaad/LVI_bert-base-portuguese-cased", "LVI (bert-base, paper)"),
+]
+
+PAPER_BERT = {"dsl_tl": 81.26, "frmt": 68.81}
 
 
-def predict(texts):
+def evaluate(pipe, texts: list[str], true_ids: list[int]) -> dict:
     raw = pipe(texts, batch_size=32)
-    return [max(p, key=lambda x: x["score"])["label"] for p in raw]
+    pred_ids = [LABEL2ID[p["label"]] for p in raw]
+    result = {
+        "f1_binary": f1_score(true_ids, pred_ids) * 100,
+        "f1_macro": f1_score(true_ids, pred_ids, average="macro") * 100,
+        "accuracy": accuracy_score(true_ids, pred_ids) * 100,
+    }
+    print(f"  F1 (binary): {result['f1_binary']:.2f}%")
+    print(f"  F1 (macro):  {result['f1_macro']:.2f}%")
+    print(f"  Accuracy:    {result['accuracy']:.2f}%")
+    print(classification_report(true_ids, pred_ids, target_names=["PT-PT", "PT-BR"]))
+    return result
 
 
-# --- DSL-TL (from original repo: PT_dev.tsv) ---
-print("=== DSL-TL ===")
-dsl_tl_url = "https://raw.githubusercontent.com/LanguageTechnologyLab/DSL-TL/main/DSL-TL-Corpus/PT-DSL-TL/PT_dev.tsv"
-raw_text = httpx.get(dsl_tl_url).text
-df = polars.read_csv(
-    io.StringIO(raw_text),
-    separator="\t",
-    has_header=False,
-    new_columns=["id", "text", "label"],
-)
+# --- Load datasets once ---
+print("Loading DSL-TL...")
+dsl_ds = load_dataset("LCA-PORVID/dsl_tl", split="test")
+dsl_ds = dsl_ds.filter(lambda x: x["label"] in [0, 1])
+dsl_texts = list(dsl_ds["text"])
+dsl_true = list(dsl_ds["label"])
+print(f"  {len(dsl_texts)} documents (paper expects 857)\n")
 
-print(f"Total documents: {len(df)}")
-print(f"Label distribution:")
-print(df.group_by("label").agg(polars.len()).sort("label"))
+print("Loading FRMT...")
+frmt_raw = load_dataset("hugosousa/frmt", split="test")
+pt_texts = [t for t in frmt_raw["pt"] if t]
+br_texts = [t for t in frmt_raw["br"] if t]
+frmt_texts = pt_texts + br_texts
+frmt_true = [0] * len(pt_texts) + [1] * len(br_texts)
+print(f"  {len(frmt_texts)} documents ({len(pt_texts)} PT-PT, {len(br_texts)} PT-BR)")
+print(f"  Paper expects: 5,226 (2,614 PT-PT, 2,612 PT-BR)\n")
 
-# Exclude "PT" (Both/Neither) as the paper did
-df = df.filter(polars.col("label") != "PT")
-bp_count = df.filter(polars.col("label") == "PT-BR").height
-ep_count = df.filter(polars.col("label") == "PT-PT").height
-print(f"\nAfter excluding 'PT': {len(df)} documents ({bp_count} BP, {ep_count} EP)")
-print("Paper expects: 857 documents (588 BP, 269 EP)")
-assert len(df) == 857, f"Expected 857, got {len(df)}"
-assert bp_count == 588, f"Expected 588 BP, got {bp_count}"
-assert ep_count == 269, f"Expected 269 EP, got {ep_count}"
-print("Numbers match!\n")
+# --- Evaluate each model ---
+results = {}
+for model_name, label in MODELS:
+    print(f"{'=' * 60}")
+    print(f"Model: {label} ({model_name})")
+    print(f"{'=' * 60}")
+    pipe = pipeline("text-classification", model=model_name, device="mps")
 
-true_labels = df["label"].to_list()
-preds = predict(df["text"].to_list())
+    print(f"\n  DSL-TL:")
+    dsl_result = evaluate(pipe=pipe, texts=dsl_texts, true_ids=dsl_true)
 
-f1 = f1_score(true_labels, preds, average="macro")
-acc = accuracy_score(true_labels, preds)
-print(f"F1 (macro): {f1 * 100:.2f}% (paper BERTd: 84.97%, BERT: 81.26%)")
-print(f"Accuracy:   {acc * 100:.2f}%")
-print(classification_report(true_labels, preds))
+    print(f"  FRMT:")
+    frmt_result = evaluate(pipe=pipe, texts=frmt_texts, true_ids=frmt_true)
 
-
-# --- FRMT (from google-research/google-research) ---
-print("\n=== FRMT ===")
-frmt_base = "https://raw.githubusercontent.com/google-research/google-research/master/frmt/dataset"
-frmt_rows = []
-for bucket in ["lexical", "entity", "random"]:
-    for region, label in [("pt-BR", "PT-BR"), ("pt-PT", "PT-PT")]:
-        url = f"{frmt_base}/{bucket}_bucket/pt_{bucket}_test_en_{region}.tsv"
-        raw_text = httpx.get(url).text
-        tsv = polars.read_csv(
-            io.StringIO(raw_text),
-            separator="\t",
-            has_header=False,
-            new_columns=["en", "text"],
-            quote_char=None,
-        )
-        frmt_rows.append(
-            tsv.select("text").with_columns(polars.lit(label).alias("label"))
-        )
-        print(f"  {bucket}/{region}: {len(tsv)} documents")
-
-frmt_df = polars.concat(frmt_rows)
-frmt_bp = frmt_df.filter(polars.col("label") == "PT-BR").height
-frmt_ep = frmt_df.filter(polars.col("label") == "PT-PT").height
-print(f"\nTotal: {len(frmt_df)} documents ({frmt_bp} BP, {frmt_ep} EP)")
-print(f"Paper expects: 5,226 documents (2,612 BP, 2,614 EP)\n")
-
-frmt_true = frmt_df["label"].to_list()
-frmt_preds = predict(frmt_df["text"].to_list())
-
-frmt_f1 = f1_score(frmt_true, frmt_preds, average="macro")
-frmt_acc = accuracy_score(frmt_true, frmt_preds)
-print(f"F1 (macro): {frmt_f1 * 100:.2f}% (paper BERTd: 77.25%, BERT: 68.81%)")
-print(f"Accuracy:   {frmt_acc * 100:.2f}%")
-print(classification_report(frmt_true, frmt_preds))
+    results[label] = {"dsl_tl": dsl_result, "frmt": frmt_result}
+    del pipe
 
 # --- Summary ---
-print("\n=== Summary ===")
-print(f"{'Dataset':<10} {'Paper BERTd':>12} {'Paper BERT':>12} {'Us (raw)':>12}")
-print(f"{'DSL-TL':<10} {'84.97%':>12} {'81.26%':>12} {f'{f1 * 100:.2f}%':>12}")
-print(f"{'FRMT':<10} {'77.25%':>12} {'68.81%':>12} {f'{frmt_f1 * 100:.2f}%':>12}")
+labels = list(results.keys())
+paper_label = labels[-1]  # LVI is the paper's model
+
+print(f"\n{'=' * 60}")
+print("Summary (binary F1)")
+print(f"{'=' * 60}")
+header = f"{'Dataset':<10} {'Paper BERT':>12}"
+for label in labels:
+    header += f" {label:>22}"
+header += f" {'Delta':>10}"
+print(header)
+
+for dataset, key in [("DSL-TL", "dsl_tl"), ("FRMT", "frmt")]:
+    row = f"{dataset:<10} {PAPER_BERT[key]:>11.2f}%"
+    for label in labels:
+        row += f" {results[label][key]['f1_binary']:>21.2f}%"
+    delta = results[paper_label][key]["f1_binary"] - PAPER_BERT[key]
+    row += f" {delta:>+9.2f}pp"
+    print(row)
