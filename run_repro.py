@@ -52,7 +52,7 @@ br_texts = [t for t in frmt_raw["br"] if t]
 frmt_texts = pt_texts + br_texts
 frmt_true = [0] * len(pt_texts) + [1] * len(br_texts)
 print(f"  {len(frmt_texts)} documents ({len(pt_texts)} PT-PT, {len(br_texts)} PT-BR)")
-print(f"  Paper expects: 5,226 (2,614 PT-PT, 2,612 PT-BR)\n")
+print("  Paper expects: 5,226 (2,614 PT-PT, 2,612 PT-BR)\n")
 
 # --- Evaluate each model ---
 results = {}
@@ -62,10 +62,10 @@ for model_name, label in MODELS:
     print(f"{'=' * 60}")
     pipe = pipeline("text-classification", model=model_name, device="mps")
 
-    print(f"\n  DSL-TL:")
+    print("\n  DSL-TL:")
     dsl_result = evaluate(pipe=pipe, texts=dsl_texts, true_ids=dsl_true)
 
-    print(f"  FRMT:")
+    print("  FRMT:")
     frmt_result = evaluate(pipe=pipe, texts=frmt_texts, true_ids=frmt_true)
 
     results[label] = {"dsl_tl": dsl_result, "frmt": frmt_result}
