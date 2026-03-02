@@ -31,8 +31,11 @@ dev = [
     "ty>=0.0.14",
 ]
 
+[tool.ty.src]
+exclude = ["scripts/"]
+
 [tool.deptry]
-exclude = ["\\.venv", "reproduce\\.py", "run_repro\\.py"]
+exclude = [".venv", "scripts/"]
 
 [tool.deptry.per_rule_ignores]
 DEP003 = ["eupt_vid"]

@@ -19,8 +19,8 @@ check: # Run linting and check
 	uv lock --check
 	uv run ruff format --check .
 	uv run ruff check .
-	uv run ty check src/
-	uv run deptry src/
+	uv run ty check .
+	uv run deptry .
 
 .PHONY: lint
 lint: check
