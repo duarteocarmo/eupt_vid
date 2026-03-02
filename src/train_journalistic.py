@@ -1,3 +1,4 @@
+import tempfile
 import time
 from pathlib import Path
 
@@ -6,9 +7,10 @@ import fasttext as ft
 from datasets import load_dataset
 from sklearn.metrics import f1_score, accuracy_score, classification_report
 
+SEED = 42
 FT_MAP = {"__label__PT_PT": 0, "__label__PT_BR": 1}
 
-DEFAULT_CONFIG = {
+CONFIG = {
     "max_per_class": 100_000,
     "fasttext_lr": 0.05,
     "fasttext_epoch": 25,
@@ -23,7 +25,7 @@ DEFAULT_CONFIG = {
 }
 
 
-def load_and_balance_training_data(config: dict) -> polars.DataFrame:
+def load_data() -> polars.DataFrame:
     print("Loading journalistic training split...")
     ds = load_dataset("liaad/PtBrVId", "journalistic", split="train")
     df: polars.DataFrame = polars.from_arrow(ds.data.table)  # type: ignore[assignment]
@@ -32,16 +34,16 @@ def load_and_balance_training_data(config: dict) -> polars.DataFrame:
     n_br = df.filter(polars.col("label") == 1).height
     print(f"  Raw: {df.height:,} (PT-PT: {n_pt:,}, PT-BR: {n_br:,})")
 
-    per_class = min(n_pt, n_br)
-    if config["max_per_class"] is not None:
-        per_class = min(per_class, config["max_per_class"])
+    per_class: int = min(n_pt, n_br)
+    if CONFIG["max_per_class"] is not None:
+        per_class = min(per_class, int(CONFIG["max_per_class"]))
 
     balanced = polars.concat(
         [
-            df.filter(polars.col("label") == 0).sample(n=per_class, seed=42),
-            df.filter(polars.col("label") == 1).sample(n=per_class, seed=42),
+            df.filter(polars.col("label") == 0).sample(n=per_class, seed=SEED),
+            df.filter(polars.col("label") == 1).sample(n=per_class, seed=SEED),
         ]
-    ).sample(fraction=1.0, seed=42)
+    ).sample(fraction=1.0, seed=SEED)
 
     balanced = balanced.with_columns(
         polars.when(polars.col("label") == 0)
@@ -60,25 +62,21 @@ def load_and_balance_training_data(config: dict) -> polars.DataFrame:
     return balanced
 
 
-def split_train_test(
-    df: polars.DataFrame, test_fraction: float = 0.1, seed: int = 42
-) -> tuple[polars.DataFrame, polars.DataFrame]:
+def split_train_test(df: polars.DataFrame, test_fraction: float = 0.2):
     train_frames, test_frames = [], []
     for label in [0, 1]:
-        subset = df.filter(polars.col("label") == label).sample(fraction=1.0, seed=seed)
+        subset = df.filter(polars.col("label") == label).sample(fraction=1.0, seed=SEED)
         n_test = int(subset.height * test_fraction)
         test_frames.append(subset.head(n_test))
         train_frames.append(subset.tail(subset.height - n_test))
 
-    train = polars.concat(train_frames).sample(fraction=1.0, seed=seed)
-    test = polars.concat(test_frames).sample(fraction=1.0, seed=seed)
+    train = polars.concat(train_frames).sample(fraction=1.0, seed=SEED)
+    test = polars.concat(test_frames).sample(fraction=1.0, seed=SEED)
     print(f"  Train: {train.height:,} | Test: {test.height:,}")
     return train, test
 
 
-def train_model(
-    train_df: polars.DataFrame, config: dict, tmpdir: str
-) -> ft.FastText._FastText:
+def train_model(train_df: polars.DataFrame, tmpdir: str):
     train_path = Path(tmpdir) / "train.txt"
     lines = train_df["ft_line"].drop_nulls().to_list()
     lines = [line for line in lines if len(line.strip()) > 20]
@@ -88,16 +86,16 @@ def train_model(
     start = time.perf_counter()
     model = ft.train_supervised(
         input=str(train_path),
-        lr=config["fasttext_lr"],
-        epoch=config["fasttext_epoch"],
-        wordNgrams=config["fasttext_wordNgrams"],
-        minn=config["fasttext_minn"],
-        maxn=config["fasttext_maxn"],
-        dim=config["fasttext_dim"],
-        bucket=config["fasttext_bucket"],
-        loss=config["fasttext_loss"],
-        thread=config["fasttext_thread"],
-        minCount=config["fasttext_minCount"],
+        lr=CONFIG["fasttext_lr"],
+        epoch=CONFIG["fasttext_epoch"],
+        wordNgrams=CONFIG["fasttext_wordNgrams"],
+        minn=CONFIG["fasttext_minn"],
+        maxn=CONFIG["fasttext_maxn"],
+        dim=CONFIG["fasttext_dim"],
+        bucket=CONFIG["fasttext_bucket"],
+        loss=CONFIG["fasttext_loss"],
+        thread=CONFIG["fasttext_thread"],
+        minCount=CONFIG["fasttext_minCount"],
     )
     elapsed = time.perf_counter() - start
 
@@ -108,7 +106,7 @@ def train_model(
     return model
 
 
-def evaluate(model: ft.FastText._FastText, test_df: polars.DataFrame):
+def evaluate(model, test_df: polars.DataFrame):
     texts = test_df["text"].str.replace_all("\n", " ").to_list()
     true_labels = test_df["label"].to_list()
 
@@ -131,7 +129,7 @@ def evaluate(model: ft.FastText._FastText, test_df: polars.DataFrame):
     )
 
 
-def test_dstl(model: ft.FastText._FastText):
+def test_dstl(model):
     print("\nLoading DSL-TL test...")
     ds = load_dataset("LCA-PORVID/dsl_tl", split="test")
     ds = ds.filter(lambda x: x["label"] in [0, 1])
@@ -158,14 +156,11 @@ def test_dstl(model: ft.FastText._FastText):
     )
 
 
-def main(config: dict | None = None):
-    import tempfile
-
-    config = config or DEFAULT_CONFIG
-    data = load_and_balance_training_data(config=config)
+if __name__ == "__main__":
+    data = load_data()
     train, test = split_train_test(data)
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        model = train_model(train_df=train, config=config, tmpdir=tmpdir)
+        model = train_model(train_df=train, tmpdir=tmpdir)
         evaluate(model=model, test_df=test)
         test_dstl(model=model)

@@ -6,5 +6,6 @@ A fast detector for Portuguese language varieties (PT-PT vs PT-BR). Classifies t
 
 | Command | Description |
 |---|---|
-| `uv run python -m eupt_vid` | Train and evaluate fastText classifier |
+| `uv run python src/train_journalistic.py` | fastText on journalistic subset only |
+| `uv run python src/train_full.py` | fastText on all subsets combined |
 | `uv run scripts/run_repro.py` | BERT baseline evaluation (PtVId, LVI) |
