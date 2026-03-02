@@ -30,9 +30,9 @@ def evaluate(pipe, texts: list[str], true_ids: list[int]) -> dict:
         "f1_macro": f1_score(true_ids, pred_ids, average="macro") * 100,
         "accuracy": accuracy_score(true_ids, pred_ids) * 100,
     }
-    print(f"  F1 (binary): {result['f1_binary']:.2f}%")
-    print(f"  F1 (macro):  {result['f1_macro']:.2f}%")
-    print(f"  Accuracy:    {result['accuracy']:.2f}%")
+    print(f"  F1 (binary): {result['f1_binary']:.4f}%")
+    print(f"  F1 (macro):  {result['f1_macro']:.4f}%")
+    print(f"  Accuracy:    {result['accuracy']:.4f}%")
     print(classification_report(true_ids, pred_ids, target_names=["PT-PT", "PT-BR"]))
     return result
 
@@ -85,9 +85,9 @@ header += f" {'Delta':>10}"
 print(header)
 
 for dataset, key in [("DSL-TL", "dsl_tl"), ("FRMT", "frmt")]:
-    row = f"{dataset:<10} {PAPER_BERT[key]:>11.2f}%"
+    row = f"{dataset:<10} {PAPER_BERT[key]:>11.4f}%"
     for label in labels:
-        row += f" {results[label][key]['f1_binary']:>21.2f}%"
+        row += f" {results[label][key]['f1_binary']:>21.4f}%"
     delta = results[paper_label][key]["f1_binary"] - PAPER_BERT[key]
-    row += f" {delta:>+9.2f}pp"
+    row += f" {delta:>+9.4f}pp"
     print(row)
