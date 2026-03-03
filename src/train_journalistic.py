@@ -5,23 +5,23 @@ from pathlib import Path
 import polars
 import fasttext as ft
 from datasets import load_dataset
-from sklearn.metrics import f1_score, accuracy_score, classification_report
+from sklearn.metrics import f1_score, classification_report
 
 SEED = 42
 FT_MAP = {"__label__PT_PT": 0, "__label__PT_BR": 1}
 
 CONFIG = {
     "max_per_class": 100_000,
-    "fasttext_lr": 0.05,
-    "fasttext_epoch": 25,
-    "fasttext_wordNgrams": 2,
-    "fasttext_minn": 3,
+    "fasttext_lr": 0.8,
+    "fasttext_epoch": 3,
+    "fasttext_wordNgrams": 1,
+    "fasttext_minn": 2,
     "fasttext_maxn": 5,
-    "fasttext_dim": 250,
+    "fasttext_dim": 256,
     "fasttext_bucket": 1_000_000,
-    "fasttext_minCount": 1000,
+    "fasttext_minCount": 500,
     "fasttext_loss": "softmax",
-    "fasttext_thread": 24,
+    "fasttext_thread": 48,
 }
 
 
@@ -106,27 +106,31 @@ def train_model(train_df: polars.DataFrame, tmpdir: str):
     return model
 
 
+def print_results(
+    true_labels: list[int],
+    pred_labels: list[int],
+    label: str,
+    best_pt_pt_f1: float | None = None,
+):
+    pt_pt_f1 = f1_score(true_labels, pred_labels, pos_label=0) * 100
+
+    print(f"\n{label}:")
+    print(
+        classification_report(true_labels, pred_labels, target_names=["PT-PT", "PT-BR"])
+    )
+    if best_pt_pt_f1 is not None:
+        print(f"  PT-PT F1: {pt_pt_f1:.1f}% (vs. {best_pt_pt_f1:.0f}% best)")
+    else:
+        print(f"  PT-PT F1: {pt_pt_f1:.1f}%")
+
+
 def evaluate(model, test_df: polars.DataFrame):
     texts = test_df["text"].str.replace_all("\n", " ").to_list()
     true_labels = test_df["label"].to_list()
 
-    start = time.perf_counter()
     preds = model.predict(texts)
-    elapsed = time.perf_counter() - start
-
     pred_labels = [FT_MAP[p[0]] for p in preds[0]]
-    speed = len(texts) / elapsed
-
-    print(f"\nIn-domain Results ({len(texts):,} docs, {speed:,.0f} sent/s):")
-    print(f"  PT-PT F1: {f1_score(true_labels, pred_labels, pos_label=0) * 100:.1f}%")
-    print(f"  PT-BR F1: {f1_score(true_labels, pred_labels, pos_label=1) * 100:.1f}%")
-    print(
-        f"  Macro F1: {f1_score(true_labels, pred_labels, average='macro') * 100:.1f}%"
-    )
-    print(f"  Accuracy: {accuracy_score(true_labels, pred_labels) * 100:.1f}%")
-    print(
-        classification_report(true_labels, pred_labels, target_names=["PT-PT", "PT-BR"])
-    )
+    print_results(true_labels=true_labels, pred_labels=pred_labels, label="In-domain")
 
 
 def test_dstl(model):
@@ -135,24 +139,29 @@ def test_dstl(model):
     ds = ds.filter(lambda x: x["label"] in [0, 1])
     texts = [t.replace("\n", " ") for t in ds["text"]]
     true_labels = list(ds["label"])
-    print(f"  {len(texts)} documents")
 
-    start = time.perf_counter()
     preds = model.predict(texts)
-    elapsed = time.perf_counter() - start
-
     pred_labels = [FT_MAP[p[0]] for p in preds[0]]
-    speed = len(texts) / elapsed
-
-    print(f"\nDSL-TL Results ({len(texts):,} docs, {speed:,.0f} sent/s):")
-    print(f"  PT-PT F1: {f1_score(true_labels, pred_labels, pos_label=0) * 100:.1f}%")
-    print(f"  PT-BR F1: {f1_score(true_labels, pred_labels, pos_label=1) * 100:.1f}%")
-    print(
-        f"  Macro F1: {f1_score(true_labels, pred_labels, average='macro') * 100:.1f}%"
+    print_results(
+        true_labels=true_labels,
+        pred_labels=pred_labels,
+        label="DSL-TL",
+        best_pt_pt_f1=75,
     )
-    print(f"  Accuracy: {accuracy_score(true_labels, pred_labels) * 100:.1f}%")
-    print(
-        classification_report(true_labels, pred_labels, target_names=["PT-PT", "PT-BR"])
+
+
+def test_frmt(model):
+    print("\nLoading FRMT test...")
+    ds = load_dataset("hugosousa/frmt", split="test")
+    pt_texts = [t for t in ds["pt"] if t]
+    br_texts = [t for t in ds["br"] if t]
+    texts = pt_texts + br_texts
+    true_labels = [0] * len(pt_texts) + [1] * len(br_texts)
+
+    preds = model.predict(texts)
+    pred_labels = [FT_MAP[p[0]] for p in preds[0]]
+    print_results(
+        true_labels=true_labels, pred_labels=pred_labels, label="FRMT", best_pt_pt_f1=76
     )
 
 
@@ -164,3 +173,4 @@ if __name__ == "__main__":
         model = train_model(train_df=train, tmpdir=tmpdir)
         evaluate(model=model, test_df=test)
         test_dstl(model=model)
+        test_frmt(model=model)
