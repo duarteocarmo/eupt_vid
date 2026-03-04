@@ -83,3 +83,57 @@ Best performing F1 for PT-PT
 - fasttext_minCount: 500
 - fasttext_loss: softmax
 - fasttext_thread: 48
+
+## Experiment: veracruz_large
+- date: 2026-03-04 10:44 UTC
+- script: train_veracruz.py
+- In-domain PT-PT F1: 87.5%
+- DSL-TL PT-PT F1: 70.5%
+- FRMT PT-PT F1: 73.8%
+- name: veracruz_large
+- fasttext_lr: 0.8
+- fasttext_epoch: 3
+- fasttext_wordNgrams: 1
+- fasttext_minn: 2
+- fasttext_maxn: 5
+- fasttext_dim: 256
+- fasttext_bucket: 1000000
+- fasttext_minCount: 500
+- fasttext_loss: softmax
+- fasttext_thread: 48
+
+## Experiment: veracruz_large_wordNgrams2
+- date: 2026-03-04 11:36 UTC
+- script: train_veracruz.py
+- In-domain PT-PT F1: 88.2%
+- DSL-TL PT-PT F1: 71.7%
+- FRMT PT-PT F1: 75.6%
+- name: veracruz_large_wordNgrams2
+- fasttext_lr: 0.8
+- fasttext_epoch: 3
+- fasttext_wordNgrams: 2
+- fasttext_minn: 2
+- fasttext_maxn: 5
+- fasttext_dim: 256
+- fasttext_bucket: 1000000
+- fasttext_minCount: 500
+- fasttext_loss: softmax
+- fasttext_thread: 48
+
+## Experiment: veracruz_large_wordNgrams2epochs5
+- date: 2026-03-04 12:14 UTC
+- script: train_veracruz.py
+- In-domain PT-PT F1: 88.4%
+- DSL-TL PT-PT F1: 71.8%
+- FRMT PT-PT F1: 75.7%
+- name: veracruz_large_wordNgrams2epochs5
+- fasttext_lr: 0.8
+- fasttext_epoch: 5
+- fasttext_wordNgrams: 2
+- fasttext_minn: 2
+- fasttext_maxn: 5
+- fasttext_dim: 256
+- fasttext_bucket: 1000000
+- fasttext_minCount: 500
+- fasttext_loss: softmax
+- fasttext_thread: 48

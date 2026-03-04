@@ -13,10 +13,10 @@ SEED = 42
 FT_MAP = {"__label__PT_PT": 0, "__label__PT_BR": 1}
 
 CONFIG = {
-    "name": "veracruz_baseline",
+    "name": "veracruz_large_wordNgrams2epochs5",
     "fasttext_lr": 0.8,
-    "fasttext_epoch": 3,
-    "fasttext_wordNgrams": 1,
+    "fasttext_epoch": 5,
+    "fasttext_wordNgrams": 2,
     "fasttext_minn": 2,
     "fasttext_maxn": 5,
     "fasttext_dim": 256,
@@ -26,7 +26,7 @@ CONFIG = {
     "fasttext_thread": 48,
 }
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "veracruz"
+DATA_DIR = Path(__file__).resolve().parent.parent / "veracruz_large"
 
 
 def load_data() -> polars.DataFrame:
