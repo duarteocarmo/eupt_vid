@@ -13,8 +13,7 @@ SEED = 42
 FT_MAP = {"__label__PT_PT": 0, "__label__PT_BR": 1}
 
 CONFIG = {
-    "name": "journalistic_baseline",
-    "max_per_class": 100_000,
+    "name": "veracruz_baseline",
     "fasttext_lr": 0.8,
     "fasttext_epoch": 3,
     "fasttext_wordNgrams": 1,
@@ -27,28 +26,24 @@ CONFIG = {
     "fasttext_thread": 48,
 }
 
+DATA_DIR = Path(__file__).resolve().parent.parent / "veracruz"
+
 
 def load_data() -> polars.DataFrame:
-    print("Loading journalistic training split...")
-    ds = load_dataset("liaad/PtBrVId", "journalistic", split="train")
-    df: polars.DataFrame = polars.from_arrow(ds.data.table)  # type: ignore[assignment]
+    print("Loading veracruz data...")
+    pt = polars.read_parquet(DATA_DIR / "pt_split.parquet")
+    br = polars.read_parquet(DATA_DIR / "br_split.parquet")
+
+    pt = pt.with_columns(polars.lit(0).alias("label"))
+    br = br.with_columns(polars.lit(1).alias("label"))
+
+    df = polars.concat([pt, br]).sample(fraction=1.0, seed=SEED)
 
     n_pt = df.filter(polars.col("label") == 0).height
     n_br = df.filter(polars.col("label") == 1).height
-    print(f"  Raw: {df.height:,} (PT-PT: {n_pt:,}, PT-BR: {n_br:,})")
+    print(f"  Total: {df.height:,} (PT-PT: {n_pt:,}, PT-BR: {n_br:,})")
 
-    per_class: int = min(n_pt, n_br)
-    if CONFIG["max_per_class"] is not None:
-        per_class = min(per_class, int(CONFIG["max_per_class"]))
-
-    balanced = polars.concat(
-        [
-            df.filter(polars.col("label") == 0).sample(n=per_class, seed=SEED),
-            df.filter(polars.col("label") == 1).sample(n=per_class, seed=SEED),
-        ]
-    ).sample(fraction=1.0, seed=SEED)
-
-    balanced = balanced.with_columns(
+    df = df.with_columns(
         polars.when(polars.col("label") == 0)
         .then(polars.lit("__label__PT_PT"))
         .otherwise(polars.lit("__label__PT_BR"))
@@ -61,11 +56,10 @@ def load_data() -> polars.DataFrame:
         ).alias("ft_line")
     )
 
-    print(f"  Balanced: {balanced.height:,} ({per_class:,} per class)")
-    return balanced
+    return df
 
 
-def split_train_test(df: polars.DataFrame, test_fraction: float = 0.2):
+def split_train_test(df: polars.DataFrame, test_fraction: float = 0.1):
     train_frames, test_frames = [], []
     for label in [0, 1]:
         subset = df.filter(polars.col("label") == label).sample(fraction=1.0, seed=SEED)
@@ -182,7 +176,7 @@ if __name__ == "__main__":
         frmt_f1 = test_frmt(model=model)
 
     record_experiment(
-        script_name="train_journalistic.py",
+        script_name="train_veracruz.py",
         experiment_name=str(CONFIG["name"]),
         metrics={
             "In-domain PT-PT F1": f"{in_domain_f1:.1f}%",

@@ -2,16 +2,19 @@ import tempfile
 import time
 from pathlib import Path
 
-import polars
 import fasttext as ft
+import polars
 from datasets import load_dataset
-from sklearn.metrics import f1_score, accuracy_score, classification_report
+from sklearn.metrics import accuracy_score, classification_report, f1_score
+
+from eupt_vid.utils import record_experiment
 
 SEED = 42
 FT_MAP = {"__label__PT_PT": 0, "__label__PT_BR": 1}
 ALL_SUBSETS = ["journalistic", "legal", "literature", "politics", "social_media", "web"]
 
 CONFIG = {
+    "name": "full_baseline",
     "max_per_class": None,
     "fasttext_lr": 0.05,
     "fasttext_epoch": 25,
@@ -114,7 +117,7 @@ def train_model(train_df: polars.DataFrame, tmpdir: str):
     return model
 
 
-def evaluate(model, test_df: polars.DataFrame):
+def evaluate(model, test_df: polars.DataFrame) -> dict[str, float]:
     texts = test_df["text"].str.replace_all("\n", " ").to_list()
     true_labels = test_df["label"].to_list()
 
@@ -125,19 +128,23 @@ def evaluate(model, test_df: polars.DataFrame):
     pred_labels = [FT_MAP[p[0]] for p in preds[0]]
     speed = len(texts) / elapsed
 
+    pt_f1 = f1_score(true_labels, pred_labels, pos_label=0) * 100
+    br_f1 = f1_score(true_labels, pred_labels, pos_label=1) * 100
+    macro_f1 = f1_score(true_labels, pred_labels, average="macro") * 100
+    acc = accuracy_score(true_labels, pred_labels) * 100
+
     print(f"\nIn-domain Results ({len(texts):,} docs, {speed:,.0f} sent/s):")
-    print(f"  PT-PT F1: {f1_score(true_labels, pred_labels, pos_label=0) * 100:.1f}%")
-    print(f"  PT-BR F1: {f1_score(true_labels, pred_labels, pos_label=1) * 100:.1f}%")
-    print(
-        f"  Macro F1: {f1_score(true_labels, pred_labels, average='macro') * 100:.1f}%"
-    )
-    print(f"  Accuracy: {accuracy_score(true_labels, pred_labels) * 100:.1f}%")
+    print(f"  PT-PT F1: {pt_f1:.1f}%")
+    print(f"  PT-BR F1: {br_f1:.1f}%")
+    print(f"  Macro F1: {macro_f1:.1f}%")
+    print(f"  Accuracy: {acc:.1f}%")
     print(
         classification_report(true_labels, pred_labels, target_names=["PT-PT", "PT-BR"])
     )
+    return {"In-domain PT-PT F1": pt_f1}
 
 
-def test_dstl(model):
+def test_dstl(model) -> dict[str, float]:
     print("\nLoading DSL-TL test...")
     ds = load_dataset("LCA-PORVID/dsl_tl", split="test")
     ds = ds.filter(lambda x: x["label"] in [0, 1])
@@ -152,16 +159,20 @@ def test_dstl(model):
     pred_labels = [FT_MAP[p[0]] for p in preds[0]]
     speed = len(texts) / elapsed
 
+    pt_f1 = f1_score(true_labels, pred_labels, pos_label=0) * 100
+    br_f1 = f1_score(true_labels, pred_labels, pos_label=1) * 100
+    macro_f1 = f1_score(true_labels, pred_labels, average="macro") * 100
+    acc = accuracy_score(true_labels, pred_labels) * 100
+
     print(f"\nDSL-TL Results ({len(texts):,} docs, {speed:,.0f} sent/s):")
-    print(f"  PT-PT F1: {f1_score(true_labels, pred_labels, pos_label=0) * 100:.1f}%")
-    print(f"  PT-BR F1: {f1_score(true_labels, pred_labels, pos_label=1) * 100:.1f}%")
-    print(
-        f"  Macro F1: {f1_score(true_labels, pred_labels, average='macro') * 100:.1f}%"
-    )
-    print(f"  Accuracy: {accuracy_score(true_labels, pred_labels) * 100:.1f}%")
+    print(f"  PT-PT F1: {pt_f1:.1f}%")
+    print(f"  PT-BR F1: {br_f1:.1f}%")
+    print(f"  Macro F1: {macro_f1:.1f}%")
+    print(f"  Accuracy: {acc:.1f}%")
     print(
         classification_report(true_labels, pred_labels, target_names=["PT-PT", "PT-BR"])
     )
+    return {"DSL-TL PT-PT F1": pt_f1}
 
 
 if __name__ == "__main__":
@@ -170,5 +181,16 @@ if __name__ == "__main__":
 
     with tempfile.TemporaryDirectory() as tmpdir:
         model = train_model(train_df=train, tmpdir=tmpdir)
-        evaluate(model=model, test_df=test)
-        test_dstl(model=model)
+        in_metrics = evaluate(model=model, test_df=test)
+        dstl_metrics = test_dstl(model=model)
+
+    all_metrics: dict[str, float | int | str] = {}
+    for d in [in_metrics, dstl_metrics]:
+        for k, v in d.items():
+            all_metrics[k] = f"{v:.1f}%"
+
+    record_experiment(
+        script_name="train_full.py",
+        experiment_name=str(CONFIG["name"]),
+        metrics=all_metrics,
+    )
