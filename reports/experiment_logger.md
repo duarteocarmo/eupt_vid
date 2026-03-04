@@ -31,13 +31,31 @@ Best performing F1 for PT-PT
     * DSL-TL: 75%
     * FRMT: 76%
 
+## bastao/PeroVaz_PT-BR_Classifier
 
-# Experiment Log
+DSL-TL:
+              precision    recall  f1-score   support
 
-| Date | Experiment | Script | Metrics |
-|------|------------|--------|---------|
-| 2026-03-04 10:13 UTC | journalistic_baseline | `train_journalistic.py` | In-domain PT-PT F1: 97.4%, DSL-TL PT-PT F1: 65.3%, FRMT PT-PT F1: 47.0% |
-| 2026-03-04 10:21 UTC | veracruz_baseline | `train_veracruz.py` | In-domain PT-PT F1: 86.6%, DSL-TL PT-PT F1: 70.5%, FRMT PT-PT F1: 72.9% |
+       PT-PT       0.53      0.81      0.64       269
+       PT-BR       0.89      0.67      0.77       588
+
+    accuracy                           0.72       857
+   macro avg       0.71      0.74      0.71       857
+weighted avg       0.78      0.72      0.73       857
+
+FRMT:
+              precision    recall  f1-score   support
+
+       PT-PT       0.67      0.60      0.63      2614
+       PT-BR       0.64      0.70      0.67      2612
+
+    accuracy                           0.65      5226
+   macro avg       0.65      0.65      0.65      5226
+weighted avg       0.65      0.65      0.65      5226
+
+
+DSL-TL PT-PT F1: 64.4%
+FRMT PT-PT F1:   63.0%
 
 ## Experiment: journalistic_baseline
 - date: 2026-03-04 10:26 UTC
