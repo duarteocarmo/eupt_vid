@@ -1,3 +1,10 @@
+# /// script
+# requires-python = ">=3.14"
+# dependencies = [
+#     "huggingface-hub",
+#     "polars",
+# ]
+# ///
 import random
 import re
 import time
@@ -13,7 +20,7 @@ TARGET_ROWS = 6_000_000
 SENTENCES_PER_CHUNK = 4
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "veracruz_6M"
 MAX_FILE_INDEX = 1500
-WORKERS = 3
+WORKERS = 5
 SEED = 42
 
 SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+")

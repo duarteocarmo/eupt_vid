@@ -1,4 +1,5 @@
 # /// script
+# requires-python = ">=3.14"
 # dependencies = [
 #     "transformers==5.2.0",
 #     "torch==2.10.0",

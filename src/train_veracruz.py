@@ -22,11 +22,11 @@ CONFIG = {
     "fasttext_dim": 256,
     "fasttext_bucket": 1_000_000,
     "fasttext_minCount": 500,
-    "fasttext_loss": "softmax",
+    "fasttext_loss": "hs",
     "fasttext_thread": 48,
 }
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "veracruz_large"
+DATA_DIR = Path(__file__).resolve().parent.parent / "veracruz_6M"
 
 
 def load_data() -> polars.DataFrame:

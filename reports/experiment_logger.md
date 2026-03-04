@@ -166,3 +166,21 @@ FRMT PT-PT F1:   63.0%
 - autotune_duration: 600
 - autotune_metric: f1:__label__PT_PT
 - selected_params: {'lr': 0.1, 'epoch': 5, 'wordNgrams': 1, 'minn': 0, 'maxn': 0, 'dim': 100, 'bucket': 0, 'minCount': 1, 'loss': 'softmax'}
+
+## Experiment: veracruz_6M_wordNgrams2epochs5
+- date: 2026-03-04 15:21 UTC
+- script: train_veracruz.py
+- In-domain PT-PT F1: 89.0%
+- DSL-TL PT-PT F1: 71.6%
+- FRMT PT-PT F1: 76.6%
+- name: veracruz_6M_wordNgrams2epochs5
+- fasttext_lr: 0.8
+- fasttext_epoch: 5
+- fasttext_wordNgrams: 2
+- fasttext_minn: 2
+- fasttext_maxn: 5
+- fasttext_dim: 256
+- fasttext_bucket: 1000000
+- fasttext_minCount: 500
+- fasttext_loss: hs
+- fasttext_thread: 48
