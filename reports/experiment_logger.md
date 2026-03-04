@@ -373,3 +373,32 @@ FRMT PT-PT F1:   63.0%
 - fasttext_minCount: 500
 - fasttext_loss: hs
 - fasttext_thread: 48
+
+Confusion matrix:
+
+DSL-TL:
+              precision    recall  f1-score   support
+
+       PT-PT       0.59      0.91      0.72       269
+       PT-BR       0.95      0.71      0.81       588
+
+    accuracy                           0.78       857
+   macro avg       0.77      0.81      0.77       857
+weighted avg       0.84      0.78      0.78       857
+
+  PT-PT F1: 71.8% (vs. 75% best)
+
+Loading FRMT test...
+
+FRMT:
+              precision    recall  f1-score   support
+
+       PT-PT       0.69      0.88      0.77      2614
+       PT-BR       0.83      0.61      0.70      2612
+
+    accuracy                           0.74      5226
+   macro avg       0.76      0.74      0.74      5226
+weighted avg       0.76      0.74      0.74      5226
+
+  PT-PT F1: 77.4% (vs. 76% best)
+
