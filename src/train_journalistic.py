@@ -182,11 +182,12 @@ if __name__ == "__main__":
         frmt_f1 = test_frmt(model=model)
 
     record_experiment(
-        script_name="train_journalistic.py",
         experiment_name=str(CONFIG["name"]),
-        metrics={
+        details={
             "In-domain PT-PT F1": f"{in_domain_f1:.1f}%",
             "DSL-TL PT-PT F1": f"{dstl_f1:.1f}%",
             "FRMT PT-PT F1": f"{frmt_f1:.1f}%",
+            "dataset": "journalistic",
+            **CONFIG,
         },
     )

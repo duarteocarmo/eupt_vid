@@ -184,13 +184,11 @@ if __name__ == "__main__":
         in_metrics = evaluate(model=model, test_df=test)
         dstl_metrics = test_dstl(model=model)
 
-    all_metrics: dict[str, float | int | str] = {}
-    for d in [in_metrics, dstl_metrics]:
-        for k, v in d.items():
-            all_metrics[k] = f"{v:.1f}%"
-
     record_experiment(
-        script_name="train_full.py",
         experiment_name=str(CONFIG["name"]),
-        metrics=all_metrics,
+        details={
+            **{
+                k: f"{v:.1f}%" for d in [in_metrics, dstl_metrics] for k, v in d.items()
+            },
+        },
     )

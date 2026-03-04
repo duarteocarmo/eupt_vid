@@ -37,3 +37,49 @@ Best performing F1 for PT-PT
 | Date | Experiment | Script | Metrics |
 |------|------------|--------|---------|
 | 2026-03-04 10:13 UTC | journalistic_baseline | `train_journalistic.py` | In-domain PT-PT F1: 97.4%, DSL-TL PT-PT F1: 65.3%, FRMT PT-PT F1: 47.0% |
+| 2026-03-04 10:21 UTC | veracruz_baseline | `train_veracruz.py` | In-domain PT-PT F1: 86.6%, DSL-TL PT-PT F1: 70.5%, FRMT PT-PT F1: 72.9% |
+
+## Experiment: journalistic_baseline
+- date: 2026-03-04 10:26 UTC
+- script: train_journalistic.py
+- In-domain PT-PT F1: 97.4%
+- DSL-TL PT-PT F1: 64.3%
+- FRMT PT-PT F1: 46.1%
+
+## Experiment: journalistic_baseline
+- date: 2026-03-04 10:27 UTC
+- script: train_journalistic.py
+- In-domain PT-PT F1: 97.4%
+- DSL-TL PT-PT F1: 64.9%
+- FRMT PT-PT F1: 47.1%
+- dataset: journalistic
+- name: journalistic_baseline
+- max_per_class: 100000
+- fasttext_lr: 0.8
+- fasttext_epoch: 3
+- fasttext_wordNgrams: 1
+- fasttext_minn: 2
+- fasttext_maxn: 5
+- fasttext_dim: 256
+- fasttext_bucket: 1000000
+- fasttext_minCount: 500
+- fasttext_loss: softmax
+- fasttext_thread: 48
+
+## Experiment: veracruz_baseline
+- date: 2026-03-04 10:31 UTC
+- script: train_veracruz.py
+- In-domain PT-PT F1: 86.5%
+- DSL-TL PT-PT F1: 68.8%
+- FRMT PT-PT F1: 73.2%
+- name: veracruz_baseline
+- fasttext_lr: 0.8
+- fasttext_epoch: 3
+- fasttext_wordNgrams: 1
+- fasttext_minn: 2
+- fasttext_maxn: 5
+- fasttext_dim: 256
+- fasttext_bucket: 1000000
+- fasttext_minCount: 500
+- fasttext_loss: softmax
+- fasttext_thread: 48
