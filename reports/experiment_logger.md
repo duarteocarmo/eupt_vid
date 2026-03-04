@@ -184,3 +184,192 @@ FRMT PT-PT F1:   63.0%
 - fasttext_minCount: 500
 - fasttext_loss: hs
 - fasttext_thread: 48
+
+## Experiment: veracruz_6M_wordNgrams2epochs5
+- date: 2026-03-04 15:43 UTC
+- script: train_veracruz.py
+- In-domain PT-PT F1: 82.6%
+- DSL-TL PT-PT F1: 65.5%
+- FRMT PT-PT F1: 70.3%
+- name: veracruz_6M_wordNgrams2epochs5
+- fasttext_lr: 0.8
+- fasttext_epoch: 5
+- fasttext_wordNgrams: 2
+- fasttext_minn: 2
+- fasttext_maxn: 5
+- fasttext_dim: 256
+- fasttext_bucket: 1000000
+- fasttext_minCount: 500
+- fasttext_loss: hs
+- fasttext_thread: 48
+
+## Experiment: tiny_baseline
+- date: 2026-03-04 15:48 UTC
+- script: train_veracruz.py
+- In-domain PT-PT F1: 82.7%
+- DSL-TL PT-PT F1: 65.8%
+- FRMT PT-PT F1: 69.4%
+- name: tiny_baseline
+- preprocess: False
+- fasttext_lr: 0.8
+- fasttext_epoch: 5
+- fasttext_wordNgrams: 2
+- fasttext_minn: 2
+- fasttext_maxn: 5
+- fasttext_dim: 256
+- fasttext_bucket: 1000000
+- fasttext_minCount: 500
+- fasttext_loss: hs
+- fasttext_thread: 48
+
+## Experiment: tiny_preprocess
+- date: 2026-03-04 15:49 UTC
+- script: train_veracruz.py
+- In-domain PT-PT F1: 82.5%
+- DSL-TL PT-PT F1: 66.5%
+- FRMT PT-PT F1: 70.3%
+- name: tiny_preprocess
+- preprocess: True
+- fasttext_lr: 0.8
+- fasttext_epoch: 5
+- fasttext_wordNgrams: 2
+- fasttext_minn: 2
+- fasttext_maxn: 5
+- fasttext_dim: 256
+- fasttext_bucket: 1000000
+- fasttext_minCount: 500
+- fasttext_loss: hs
+- fasttext_thread: 48
+
+## Experiment: tiny_lr_0.1
+- date: 2026-03-04 15:49 UTC
+- script: train_veracruz.py
+- In-domain PT-PT F1: 77.9%
+- DSL-TL PT-PT F1: 63.8%
+- FRMT PT-PT F1: 65.5%
+- name: tiny_lr_0.1
+- preprocess: False
+- fasttext_lr: 0.1
+- fasttext_epoch: 5
+- fasttext_wordNgrams: 2
+- fasttext_minn: 2
+- fasttext_maxn: 5
+- fasttext_dim: 256
+- fasttext_bucket: 1000000
+- fasttext_minCount: 500
+- fasttext_loss: hs
+- fasttext_thread: 48
+
+## Experiment: tiny_lr_0.5
+- date: 2026-03-04 15:50 UTC
+- script: train_veracruz.py
+- In-domain PT-PT F1: 82.7%
+- DSL-TL PT-PT F1: 65.5%
+- FRMT PT-PT F1: 70.1%
+- name: tiny_lr_0.5
+- preprocess: False
+- fasttext_lr: 0.5
+- fasttext_epoch: 5
+- fasttext_wordNgrams: 2
+- fasttext_minn: 2
+- fasttext_maxn: 5
+- fasttext_dim: 256
+- fasttext_bucket: 1000000
+- fasttext_minCount: 500
+- fasttext_loss: hs
+- fasttext_thread: 48
+
+## Experiment: tiny_lr_1.5
+- date: 2026-03-04 15:50 UTC
+- script: train_veracruz.py
+- In-domain PT-PT F1: 82.9%
+- DSL-TL PT-PT F1: 66.2%
+- FRMT PT-PT F1: 69.2%
+- name: tiny_lr_1.5
+- preprocess: False
+- fasttext_lr: 1.5
+- fasttext_epoch: 5
+- fasttext_wordNgrams: 2
+- fasttext_minn: 2
+- fasttext_maxn: 5
+- fasttext_dim: 256
+- fasttext_bucket: 1000000
+- fasttext_minCount: 500
+- fasttext_loss: hs
+- fasttext_thread: 48
+
+## Experiment: tiny_lr_3.0
+- date: 2026-03-04 15:51 UTC
+- script: train_veracruz.py
+- In-domain PT-PT F1: 82.6%
+- DSL-TL PT-PT F1: 65.5%
+- FRMT PT-PT F1: 70.1%
+- name: tiny_lr_3.0
+- preprocess: False
+- fasttext_lr: 3.0
+- fasttext_epoch: 5
+- fasttext_wordNgrams: 2
+- fasttext_minn: 2
+- fasttext_maxn: 5
+- fasttext_dim: 256
+- fasttext_bucket: 1000000
+- fasttext_minCount: 500
+- fasttext_loss: hs
+- fasttext_thread: 48
+
+## Experiment: tiny_epoch_2
+- date: 2026-03-04 15:51 UTC
+- script: train_veracruz.py
+- In-domain PT-PT F1: 81.3%
+- DSL-TL PT-PT F1: 65.1%
+- FRMT PT-PT F1: 68.6%
+- name: tiny_epoch_2
+- preprocess: False
+- fasttext_lr: 0.8
+- fasttext_epoch: 2
+- fasttext_wordNgrams: 2
+- fasttext_minn: 2
+- fasttext_maxn: 5
+- fasttext_dim: 256
+- fasttext_bucket: 1000000
+- fasttext_minCount: 500
+- fasttext_loss: hs
+- fasttext_thread: 48
+
+## Experiment: tiny_epoch_10
+- date: 2026-03-04 15:52 UTC
+- script: train_veracruz.py
+- In-domain PT-PT F1: 82.5%
+- DSL-TL PT-PT F1: 64.8%
+- FRMT PT-PT F1: 69.7%
+- name: tiny_epoch_10
+- preprocess: False
+- fasttext_lr: 0.8
+- fasttext_epoch: 10
+- fasttext_wordNgrams: 2
+- fasttext_minn: 2
+- fasttext_maxn: 5
+- fasttext_dim: 256
+- fasttext_bucket: 1000000
+- fasttext_minCount: 500
+- fasttext_loss: hs
+- fasttext_thread: 48
+
+## Experiment: veracruz_6M_preprocess
+- date: 2026-03-04 17:00 UTC
+- script: train_veracruz.py
+- In-domain PT-PT F1: 88.6%
+- DSL-TL PT-PT F1: 71.8%
+- FRMT PT-PT F1: 77.4%
+- name: veracruz_6M_preprocess
+- preprocess: True
+- fasttext_lr: 0.8
+- fasttext_epoch: 5
+- fasttext_wordNgrams: 2
+- fasttext_minn: 2
+- fasttext_maxn: 5
+- fasttext_dim: 256
+- fasttext_bucket: 1000000
+- fasttext_minCount: 500
+- fasttext_loss: hs
+- fasttext_thread: 48
