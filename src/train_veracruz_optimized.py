@@ -13,17 +13,9 @@ SEED = 42
 FT_MAP = {"__label__PT_PT": 0, "__label__PT_BR": 1}
 
 CONFIG = {
-    "name": "veracruz_6M_wordNgrams2epochs5",
-    "fasttext_lr": 0.8,
-    "fasttext_epoch": 5,
-    "fasttext_wordNgrams": 2,
-    "fasttext_minn": 2,
-    "fasttext_maxn": 5,
-    "fasttext_dim": 256,
-    "fasttext_bucket": 1_000_000,
-    "fasttext_minCount": 500,
-    "fasttext_loss": "softmax",
-    "fasttext_thread": 48,
+    "name": "veracruz_autotune",
+    "autotune_duration": 600,
+    "autotune_metric": "f1:__label__PT_PT",
 }
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "veracruz_large"
@@ -73,26 +65,32 @@ def split_train_test(df: polars.DataFrame, test_fraction: float = 0.1):
     return train, test
 
 
-def train_model(train_df: polars.DataFrame, tmpdir: str):
-    train_path = Path(tmpdir) / "train.txt"
-    lines = train_df["ft_line"].drop_nulls().to_list()
+def write_fasttext_file(df: polars.DataFrame, path: Path) -> int:
+    lines = df["ft_line"].drop_nulls().to_list()
     lines = [line for line in lines if len(line.strip()) > 20]
-    train_path.write_text("\n".join(lines))
-    print(f"  {len(lines):,} lines")
+    path.write_text("\n".join(lines))
+    return len(lines)
+
+
+def train_model(train_df: polars.DataFrame, valid_df: polars.DataFrame, tmpdir: str):
+    train_path = Path(tmpdir) / "train.txt"
+    valid_path = Path(tmpdir) / "valid.txt"
+
+    n_train = write_fasttext_file(train_df, train_path)
+    n_valid = write_fasttext_file(valid_df, valid_path)
+    print(f"  Train: {n_train:,} lines | Valid: {n_valid:,} lines")
+
+    print(
+        f"  Autotuning for {CONFIG['autotune_duration']}s, "
+        f"metric: {CONFIG['autotune_metric']}"
+    )
 
     start = time.perf_counter()
     model = ft.train_supervised(
         input=str(train_path),
-        lr=CONFIG["fasttext_lr"],
-        epoch=CONFIG["fasttext_epoch"],
-        wordNgrams=CONFIG["fasttext_wordNgrams"],
-        minn=CONFIG["fasttext_minn"],
-        maxn=CONFIG["fasttext_maxn"],
-        dim=CONFIG["fasttext_dim"],
-        bucket=CONFIG["fasttext_bucket"],
-        loss=CONFIG["fasttext_loss"],
-        thread=CONFIG["fasttext_thread"],
-        minCount=CONFIG["fasttext_minCount"],
+        autotuneValidationFile=str(valid_path),
+        autotuneDuration=CONFIG["autotune_duration"],
+        autotuneMetric=CONFIG["autotune_metric"],
     )
     elapsed = time.perf_counter() - start
 
@@ -100,7 +98,25 @@ def train_model(train_df: polars.DataFrame, tmpdir: str):
     model.save_model(str(model_path))
     size_mb = model_path.stat().st_size / (1024 * 1024)
     print(f"  {elapsed:.1f}s | {size_mb:.1f} MB")
-    return model
+
+    # Log the params autotune selected
+    args = model.f.getArgs()
+    selected = {
+        "lr": args.lr,
+        "epoch": args.epoch,
+        "wordNgrams": args.wordNgrams,
+        "minn": args.minn,
+        "maxn": args.maxn,
+        "dim": args.dim,
+        "bucket": args.bucket,
+        "minCount": args.minCount,
+        "loss": str(args.loss).split(".")[-1],
+    }
+    print("  Autotune selected params:")
+    for k, v in selected.items():
+        print(f"    {k}: {v}")
+
+    return model, selected
 
 
 def print_results(
@@ -170,7 +186,9 @@ if __name__ == "__main__":
     train, test = split_train_test(data)
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        model = train_model(train_df=train, tmpdir=tmpdir)
+        model, selected_params = train_model(
+            train_df=train, valid_df=test, tmpdir=tmpdir
+        )
         in_domain_f1 = evaluate(model=model, test_df=test)
         dstl_f1 = test_dstl(model=model)
         frmt_f1 = test_frmt(model=model)
@@ -182,5 +200,6 @@ if __name__ == "__main__":
             "DSL-TL PT-PT F1": f"{dstl_f1:.1f}%",
             "FRMT PT-PT F1": f"{frmt_f1:.1f}%",
             **CONFIG,
+            "selected_params": selected_params,
         },
     )

@@ -137,3 +137,14 @@ Best performing F1 for PT-PT
 - fasttext_minCount: 500
 - fasttext_loss: softmax
 - fasttext_thread: 48
+
+## Experiment: veracruz_autotune
+- date: 2026-03-04 13:36 UTC
+- script: train_veracruz_optimized.py
+- In-domain PT-PT F1: 87.5%
+- DSL-TL PT-PT F1: 69.0%
+- FRMT PT-PT F1: 73.3%
+- name: veracruz_autotune
+- autotune_duration: 600
+- autotune_metric: f1:__label__PT_PT
+- selected_params: {'lr': 0.1, 'epoch': 5, 'wordNgrams': 1, 'minn': 0, 'maxn': 0, 'dim': 100, 'bucket': 0, 'minCount': 1, 'loss': 'softmax'}
