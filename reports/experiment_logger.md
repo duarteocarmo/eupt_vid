@@ -456,3 +456,16 @@ weighted avg       0.76      0.74      0.74      5226
 - fasttext_minCount: 500
 - fasttext_loss: hs
 - fasttext_thread: 48
+
+## Quantization 
+
+| Model                                         | DSL-TL | FRMT   |
+|-----------------------------------------------|--------|--------|
+| Original (1112 MB)                            |  72.0% |  76.3% |
+| Quant default (141 MB)                        |  72.0% |  76.1% |
+| Quant qnorm (142 MB)                          |  73.3% |  75.9% |
+| Quant dsub=4 (71 MB)                          |  73.6% |  76.0% |
+| Quant cutoff=100k (14 MB)                     |  69.7% |  75.6% |
+| Quant qnorm+cutoff=100k (14 MB)               |  70.7% |  75.4% |
+
+
