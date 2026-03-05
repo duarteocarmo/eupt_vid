@@ -420,3 +420,39 @@ weighted avg       0.76      0.74      0.74      5226
 - fasttext_minCount: 500
 - fasttext_loss: hs
 - fasttext_thread: 48
+
+## Experiment: veracruz_6M_best
+- date: 2026-03-05 16:41 UTC
+- script: train_veracruz.py
+- In-domain PT-PT F1: 88.4%
+- DSL-TL PT-PT F1: 71.5%
+- FRMT PT-PT F1: 75.6%
+- name: veracruz_6M_best
+- fasttext_lr: 0.8
+- fasttext_epoch: 5
+- fasttext_wordNgrams: 2
+- fasttext_minn: 2
+- fasttext_maxn: 5
+- fasttext_dim: 256
+- fasttext_bucket: 1000000
+- fasttext_minCount: 500
+- fasttext_loss: hs
+- fasttext_thread: 48
+
+## Experiment: veracruz_6M_best
+- date: 2026-03-05 17:19 UTC
+- script: train_veracruz.py
+- In-domain PT-PT F1: 89.0%
+- DSL-TL PT-PT F1: 71.7%
+- FRMT PT-PT F1: 76.5%
+- name: veracruz_6M_best
+- fasttext_lr: 0.8
+- fasttext_epoch: 5
+- fasttext_wordNgrams: 2
+- fasttext_minn: 2
+- fasttext_maxn: 5
+- fasttext_dim: 256
+- fasttext_bucket: 1000000
+- fasttext_minCount: 500
+- fasttext_loss: hs
+- fasttext_thread: 48

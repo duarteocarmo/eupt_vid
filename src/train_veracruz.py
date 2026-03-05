@@ -1,6 +1,7 @@
-import re
+import shutil
 import tempfile
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import fasttext as ft
@@ -14,8 +15,7 @@ SEED = 42
 FT_MAP = {"__label__PT_PT": 0, "__label__PT_BR": 1}
 
 CONFIG = {
-    "name": "veracruz_6M_preprocess",
-    "preprocess": True,
+    "name": "veracruz_6M_best",
     "fasttext_lr": 0.8,
     "fasttext_epoch": 5,
     "fasttext_wordNgrams": 2,
@@ -29,15 +29,7 @@ CONFIG = {
 }
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "veracruz_6M"
-
-_PUNCT_RE = re.compile(r"[^\w\s]", re.UNICODE)
-
-
-def preprocess_text(text: str) -> str:
-    """Lowercase and strip punctuation, as per fasttext tutorial."""
-    text = text.lower()
-    text = _PUNCT_RE.sub("", text)
-    return text
+MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
 
 
 def load_data() -> polars.DataFrame:
@@ -54,17 +46,18 @@ def load_data() -> polars.DataFrame:
     n_br = df.filter(polars.col("label") == 1).height
     print(f"  Total: {df.height:,} (PT-PT: {n_pt:,}, PT-BR: {n_br:,})")
 
-    text_col = polars.col("text").str.replace_all("\n", " ").str.strip_chars()
-    if CONFIG["preprocess"]:
-        print("  Preprocessing: lowercase + strip punctuation")
-        text_col = text_col.str.to_lowercase().str.replace_all(r"[^\w\s]", "")
-
     df = df.with_columns(
         polars.when(polars.col("label") == 0)
         .then(polars.lit("__label__PT_PT"))
         .otherwise(polars.lit("__label__PT_BR"))
         .alias("ft_label")
-    ).with_columns((polars.col("ft_label") + " " + text_col).alias("ft_line"))
+    ).with_columns(
+        (
+            polars.col("ft_label")
+            + " "
+            + polars.col("text").str.replace_all("\n", " ").str.strip_chars()
+        ).alias("ft_line")
+    )
 
     return df
 
@@ -132,15 +125,8 @@ def print_results(
     return pt_pt_f1
 
 
-def _prepare_texts(texts: list[str]) -> list[str]:
-    texts = [t.replace("\n", " ") for t in texts]
-    if CONFIG["preprocess"]:
-        texts = [preprocess_text(t) for t in texts]
-    return texts
-
-
 def evaluate(model, test_df: polars.DataFrame) -> float:
-    texts = _prepare_texts(test_df["text"].to_list())
+    texts = test_df["text"].str.replace_all("\n", " ").to_list()
     true_labels = test_df["label"].to_list()
 
     preds = model.predict(texts)
@@ -154,7 +140,7 @@ def test_dstl(model) -> float:
     print("\nLoading DSL-TL test...")
     ds = load_dataset("LCA-PORVID/dsl_tl", split="test")
     ds = ds.filter(lambda x: x["label"] in [0, 1])
-    texts = _prepare_texts(list(ds["text"]))
+    texts = [t.replace("\n", " ") for t in ds["text"]]
     true_labels = list(ds["label"])
 
     preds = model.predict(texts)
@@ -172,7 +158,7 @@ def test_frmt(model) -> float:
     ds = load_dataset("hugosousa/frmt", split="test")
     pt_texts = [t for t in ds["pt"] if t]
     br_texts = [t for t in ds["br"] if t]
-    texts = _prepare_texts(pt_texts + br_texts)
+    texts = pt_texts + br_texts
     true_labels = [0] * len(pt_texts) + [1] * len(br_texts)
 
     preds = model.predict(texts)
@@ -191,6 +177,14 @@ if __name__ == "__main__":
         in_domain_f1 = evaluate(model=model, test_df=test)
         dstl_f1 = test_dstl(model=model)
         frmt_f1 = test_frmt(model=model)
+
+        # Save model
+        MODELS_DIR.mkdir(parents=True, exist_ok=True)
+        ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        model_name = f"{ts}_{CONFIG['name']}.bin"
+        dest = MODELS_DIR / model_name
+        shutil.copy2(Path(tmpdir) / "pt_vid.bin", dest)
+        print(f"\n💾 Model saved to {dest}")
 
     record_experiment(
         experiment_name=str(CONFIG["name"]),
