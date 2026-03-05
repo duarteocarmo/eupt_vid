@@ -402,3 +402,21 @@ weighted avg       0.76      0.74      0.74      5226
 
   PT-PT F1: 77.4% (vs. 76% best)
 
+
+## Experiment: veracruz_10M_wN2_ep5
+- date: 2026-03-04 22:50 UTC
+- script: train_veracruz.py
+- In-domain PT-PT F1: 89.3%
+- DSL-TL PT-PT F1: 71.8%
+- FRMT PT-PT F1: 76.6%
+- name: veracruz_10M_wN2_ep5
+- fasttext_lr: 0.8
+- fasttext_epoch: 5
+- fasttext_wordNgrams: 2
+- fasttext_minn: 2
+- fasttext_maxn: 5
+- fasttext_dim: 256
+- fasttext_bucket: 1000000
+- fasttext_minCount: 500
+- fasttext_loss: hs
+- fasttext_thread: 48
