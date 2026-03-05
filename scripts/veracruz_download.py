@@ -16,9 +16,9 @@ import polars
 from huggingface_hub import hf_hub_url
 
 REPO_ID = "bastao/VeraCruz_PT-BR"
-TARGET_ROWS = 50_000
+TARGET_ROWS = 10_000_000
 SENTENCES_PER_CHUNK = 4
-OUTPUT_DIR = Path(__file__).resolve().parent.parent / "veracruz_tiny"
+OUTPUT_DIR = Path(__file__).resolve().parent.parent / "veracruz_fatty"
 MAX_FILE_INDEX = 1500
 WORKERS = 5
 SEED = 42
