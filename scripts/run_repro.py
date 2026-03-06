@@ -6,7 +6,6 @@
 #     "scikit-learn",
 #     "datasets",
 # ]
-# requires-python = ">=3.12"
 # ///
 
 from transformers import pipeline
