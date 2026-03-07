@@ -1,23 +1,23 @@
 # /// script
 # requires-python = ">=3.14"
 # dependencies = [
-#     "fasttext",
+#     "fasttext-rs>=0.2.1",
 #     "polars",
 #     "huggingface-hub",
 # ]
 # ///
-"""Filter a FineWeb-2 Portuguese parquet for PT-PT using our FastText classifier."""
+"""Filter a FineWeb-2 Portuguese parquet for PT-PT using fasttext-rs."""
 
 import time
 from pathlib import Path
 
-import fasttext as ft
+import fasttext_rs
 import polars as pl
 from huggingface_hub import hf_hub_download
 
 MODEL_PATH = "models/20260305_171908_veracruz_6M_best.bin"
 THRESHOLD = 0.7
-OUTPUT_PATH = Path("data/fineweb2_ptpt_sample.parquet")
+OUTPUT_PATH = Path("data/fineweb2_ptpt_sample_rs.parquet")
 
 
 def download_parquet() -> Path:
@@ -30,8 +30,8 @@ def download_parquet() -> Path:
 
 
 def get_ptpt_score(model, text: str) -> float:
-    result = model.f.predict(text.replace("\n", " "), 2, 0.0, "")
-    for prob, label in result:
+    labels, probs = model.predict(text.replace("\n", " "), k=2)
+    for label, prob in zip(labels, probs):
         if label == "__label__PT_PT":
             return prob
     return 0.0
@@ -39,13 +39,12 @@ def get_ptpt_score(model, text: str) -> float:
 
 def main():
     print("Loading model...")
-    model = ft.load_model(MODEL_PATH)
+    model = fasttext_rs.load_model(MODEL_PATH)
 
     print("Downloading parquet...")
     parquet_path = download_parquet()
     df = pl.read_parquet(parquet_path)
     print(f"  Loaded {len(df):,} rows")
-    print(f"  Columns: {df.columns}")
 
     print(f"\nClassifying with threshold={THRESHOLD}...")
     start = time.perf_counter()
