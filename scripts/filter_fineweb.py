@@ -68,8 +68,6 @@ def main():
 
     print(f"\n  Total: {len(df):,} → PT-PT: {len(df_ptpt):,} ({kept_pct:.1f}% kept)")
 
-    breakpoint()
-
     # Save
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     df_ptpt.write_parquet(OUTPUT_PATH)
