@@ -18,7 +18,7 @@ CONFIG = {
     "autotune_metric": "f1:__label__PT_PT",
 }
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "veracruz_large"
+DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "veracruz_large"
 
 
 def load_data() -> polars.DataFrame:

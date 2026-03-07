@@ -1,11 +1,3 @@
-# /// script
-# requires-python = ">=3.14"
-# dependencies = [
-#     "datasets",
-#     "fasttext",
-#     "scikit-learn",
-# ]
-# ///
 """Test quantization variants of a fasttext model on DSL-TL and FRMT."""
 
 import os

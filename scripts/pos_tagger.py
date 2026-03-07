@@ -12,7 +12,7 @@ from transformers import pipeline
 
 pipe = pipeline("token-classification", model="lisaterumi/postagger-portuguese")
 
-df = polars.read_parquet("ptbrvid-data/journalistic/test-00000-of-00001.parquet")
+df = polars.read_parquet("data/ptbrvid-data/journalistic/test-00000-of-00001.parquet")
 
 samples = polars.concat(
     [

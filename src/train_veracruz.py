@@ -28,7 +28,7 @@ CONFIG = {
     "fasttext_thread": 48,
 }
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "veracruz_6M"
+DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "veracruz_6M"
 MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
 
 
