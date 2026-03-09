@@ -469,3 +469,17 @@ weighted avg       0.76      0.74      0.74      5226
 | Quant qnorm+cutoff=100k (14 MB)               |  70.7% |  75.4% |
 
 
+
+## Experiment: paper_data_default
+- date: 2026-03-09 16:31 UTC
+- script: train_paper_data.py
+- DSL-TL PT-PT F1: 55.5%
+- FRMT PT-PT F1: 68.3%
+- name: paper_data_default
+
+## Experiment: paper_data_default
+- date: 2026-03-09 16:36 UTC
+- script: train_paper_data.py
+- DSL-TL PT-PT F1: 54.0%
+- FRMT PT-PT F1: 68.1%
+- name: paper_data_default

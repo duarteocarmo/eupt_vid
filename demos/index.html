@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="color-scheme" content="light dark">
+    <title>euptvid</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🇵🇹</text></svg>">
+    <style>
+        * { box-sizing: border-box; }
+        :root { --border-color: black; }
+        @media (prefers-color-scheme: dark) { :root { --border-color: white; } }
+
+        body {
+            font-family: system-ui;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+            font-size: 90%;
+        }
+
+        .container {
+            width: 85%;
+            max-width: 700px;
+        }
+
+        header { padding: 10px 0 20px; }
+        h1 { margin: 0 0 5px; }
+        header p { margin: 5px 0; }
+        header a { color: inherit; }
+
+        #loading {
+            padding: 40px 0;
+            text-align: center;
+        }
+
+        #loading code { font-size: 0.85em; }
+
+        .spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 1.5px solid var(--border-color);
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        #app { display: none; }
+        #app.visible { display: block; }
+
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            font-family: system-ui;
+            font-size: 0.9em;
+            padding: 10px;
+            resize: vertical;
+            border: 0.5px solid var(--border-color);
+            border-radius: 0;
+            background: inherit;
+            color: inherit;
+        }
+
+        textarea:focus { outline: none; }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+        }
+
+        .controls small { color: gray; }
+
+        button {
+            font-family: system-ui;
+            font-size: 0.85em;
+            padding: 4px 12px;
+            border: 0.5px solid var(--border-color);
+            background: inherit;
+            color: inherit;
+            cursor: pointer;
+            line-height: 1.4;
+        }
+
+        button:hover { opacity: 0.7; }
+
+        .results {
+            border: 0.5px solid var(--border-color);
+            margin-top: 10px;
+        }
+
+        .results:empty { display: none; }
+
+        .result-row {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            padding: 8px 10px;
+            font-size: 0.85em;
+            border-bottom: 0.5px solid var(--border-color);
+        }
+
+        .result-row:last-child { border-bottom: none; }
+
+        .result-label {
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .result-prob {
+            color: gray;
+            white-space: nowrap;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .result-text {
+            flex: 1;
+            word-break: break-word;
+        }
+
+        .timing {
+            font-size: 0.8em;
+            color: gray;
+            padding: 6px 0;
+        }
+
+        .examples { padding-top: 20px; }
+        .examples p { margin: 0 0 8px; color: gray; font-size: 0.8em; }
+
+        .example-btn {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 6px 10px;
+            margin-bottom: 4px;
+            font-family: system-ui;
+            font-size: 0.85em;
+            border: 0.5px solid transparent;
+            background: inherit;
+            color: inherit;
+            cursor: pointer;
+        }
+
+        .example-btn:hover {
+            border-color: var(--border-color);
+        }
+
+        footer {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px 0 0;
+            font-size: 0.75em;
+            color: gray;
+        }
+
+        footer a { color: inherit; }
+
+        @media (max-width: 600px) {
+            .container { width: 95%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>euptvid 🇵🇹</h1>
+            <p>
+                Portuguese variety identification running in your browser via WebAssembly.
+                Distinguishes European Portuguese (PT-PT) from Brazilian Portuguese (PT-BR).
+                Code is on <a href="https://github.com/duarteocarmo/eupt_vid" target="_blank">GitHub</a>.
+            </p>
+            <p><code>model: quantized · 68 MB · dsub=4</code></p>
+        </header>
+
+        <div id="loading">
+            <p><span class="spinner"></span> <code id="loader-status">loading model…</code></p>
+        </div>
+
+        <div id="app">
+            <textarea id="input" placeholder="Escreva ou cole texto em português…" spellcheck="false"></textarea>
+            <div class="controls">
+                <small>one line per prediction</small>
+                <button id="classify-btn">Classify</button>
+            </div>
+
+            <div class="timing" id="timing"></div>
+            <div class="results" id="results"></div>
+
+            <div class="examples">
+                <p>Examples:</p>
+                <button class="example-btn" data-text="Bom dia, como é que está?&#10;Bom dia, como você está?">→ «Bom dia» — PT-PT vs PT-BR greeting</button>
+                <button class="example-btn" data-text="O governo português anunciou novas medidas para combater a inflação.&#10;O presidente Lula viajou para Brasília ontem à noite.">→ News headlines — Portugal vs Brazil</button>
+                <button class="example-btn" data-text="Vou buscar o autocarro para ir ao centro.&#10;Vou pegar o ônibus para ir ao centro.">→ Everyday language — autocarro vs ônibus</button>
+                <button class="example-btn" data-text="Estou a trabalhar no meu computador portátil.&#10;Estou trabalhando no meu notebook.">→ Gerund and vocabulary differences</button>
+            </div>
+
+            <footer>
+                <span>fasttext · webassembly · runs client-side</span>
+                <a href="https://huggingface.co/duarteocarmo/fasttext-euptvid" target="_blank">duarteocarmo/fasttext-euptvid ↗</a>
+            </footer>
+        </div>
+    </div>
+
+    <script type="module">
+        import { FastText, addOnPostRun } from "./fasttext.js";
+
+        const inputEl = document.getElementById("input");
+        const resultsEl = document.getElementById("results");
+        const timingEl = document.getElementById("timing");
+        const loadingEl = document.getElementById("loading");
+        const appEl = document.getElementById("app");
+        const statusEl = document.getElementById("loader-status");
+        const classifyBtn = document.getElementById("classify-btn");
+
+        let model = null;
+
+        function escapeHtml(s) {
+            const d = document.createElement("div");
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
+        function classify(text) {
+            if (!model || !text.trim()) return;
+
+            const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+            resultsEl.innerHTML = "";
+
+            const t0 = performance.now();
+
+            lines.forEach(line => {
+                const predictions = model.predict(line, 2, 0.0);
+                if (predictions.size() === 0) return;
+
+                const top = predictions.get(0);
+                const label = top[1].replace("__label__", "");
+                const prob = top[0];
+
+                const row = document.createElement("div");
+                row.className = "result-row";
+                row.innerHTML = `<span class="result-label">${label}</span><span class="result-prob">${(prob * 100).toFixed(1)}%</span><span class="result-text">${escapeHtml(line)}</span>`;
+                resultsEl.appendChild(row);
+            });
+
+            const elapsed = (performance.now() - t0).toFixed(1);
+            timingEl.textContent = `${lines.length} line${lines.length > 1 ? "s" : ""} · ${elapsed} ms`;
+        }
+
+        classifyBtn.addEventListener("click", () => classify(inputEl.value));
+
+        inputEl.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && e.shiftKey) {
+                e.preventDefault();
+                classify(inputEl.value);
+            }
+        });
+
+        document.querySelectorAll(".example-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                inputEl.value = btn.dataset.text;
+                classify(inputEl.value);
+            });
+        });
+
+        addOnPostRun(async () => {
+            const ft = new FastText();
+            statusEl.textContent = "downloading model…";
+
+            try {
+                model = await ft.loadModel("model_quantized.ftz");
+                loadingEl.style.display = "none";
+                appEl.classList.add("visible");
+                inputEl.focus();
+            } catch (err) {
+                statusEl.textContent = "error: " + err.message;
+                console.error(err);
+            }
+        });
+    </script>
+</body>
+</html>

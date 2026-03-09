@@ -21,6 +21,7 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 FT_MAP = {"__label__PT_PT": 0, "__label__PT_BR": 1}
 FASTTEXT_MODEL = "models/20260305_171908_veracruz_6M_best.bin"
 FASTTEXT_MODEL_Q = "models/20260305_171908_veracruz_6M_best_dsub4.ftz"
+FASTTEXT_PAPER_MODEL = "models/20260309_163643_paper_data_default.bin"
 BERT_LARGE_MODEL = "liaad/PtVId"  # Paper model (BERTimbau-large, 334M params)
 BERT_BASE_MODEL = (
     "liaad/LVI_bert-base-portuguese-cased"  # Unpublished variant (bert-base)
@@ -55,7 +56,14 @@ def load_frmt() -> tuple[list[str], list[int]]:
 def predict_fasttext(model, texts: list[str]) -> list[int]:
     preds = []
     for t in texts:
-        r = model.f.predict(t.replace("\n", " "), 1, 0.0, "")
+        cleaned = t.replace("\n", " ").strip()
+        if not cleaned:
+            preds.append(1)  # default to PT-BR for empty strings
+            continue
+        r = model.f.predict(cleaned, 1, 0.0, "")
+        if not r:
+            preds.append(1)
+            continue
         preds.append(FT_MAP[r[0][1]])
     return preds
 
@@ -171,6 +179,33 @@ if __name__ == "__main__":
     )
     del ft_model_q
 
+    # --- FastText (paper data, default params) ---
+    print("\n" + "=" * 70)
+    print("FASTTEXT (paper data, default params)")
+    print("=" * 70)
+    ft_paper = ft.load_model(FASTTEXT_PAPER_MODEL)
+
+    start = time.perf_counter()
+    ftp_dstl_preds = predict_fasttext(ft_paper, dstl_texts)
+    evaluate(
+        "FastText (paper data)",
+        "DSL-TL",
+        dstl_labels,
+        ftp_dstl_preds,
+        time.perf_counter() - start,
+    )
+
+    start = time.perf_counter()
+    ftp_frmt_preds = predict_fasttext(ft_paper, frmt_texts)
+    evaluate(
+        "FastText (paper data)",
+        "FRMT",
+        frmt_labels,
+        ftp_frmt_preds,
+        time.perf_counter() - start,
+    )
+    del ft_paper
+
     # --- BERT-large ---
     print("\n" + "=" * 70)
     print("PtVId paper (liaad/PtVId) — BERTimbau-large, 334M params")
@@ -271,6 +306,7 @@ if __name__ == "__main__":
 
     ft_size = os.path.getsize(FASTTEXT_MODEL) / 1e6
     ftq_size = os.path.getsize(FASTTEXT_MODEL_Q) / 1e6
+    ftp_size = os.path.getsize(FASTTEXT_PAPER_MODEL) / 1e6
 
     print("\n" + "=" * 70)
     print("SUMMARY (PT-PT F1)")
@@ -278,6 +314,7 @@ if __name__ == "__main__":
     models = [
         f"FastText full ({ft_size:.0f}MB)",
         f"FastText quantized ({ftq_size:.0f}MB)",
+        f"FastText paper data ({ftp_size:.0f}MB)",
         "PtVId paper (liaad/PtVId)",
         "LVI unpublished (liaad/LVI)",
         "PeroVaz (bastao/PeroVaz)",
@@ -285,6 +322,7 @@ if __name__ == "__main__":
     dstl_f1s = [
         f1_score(dstl_labels, ft_dstl_preds, pos_label=0) * 100,
         f1_score(dstl_labels, ftq_dstl_preds, pos_label=0) * 100,
+        f1_score(dstl_labels, ftp_dstl_preds, pos_label=0) * 100,
         f1_score(dstl_labels, bert_dstl_preds, pos_label=0) * 100,
         f1_score(dstl_labels, lvi_dstl_preds, pos_label=0) * 100,
         f1_score(dstl_labels, pv_dstl_preds, pos_label=0) * 100,
@@ -292,6 +330,7 @@ if __name__ == "__main__":
     frmt_f1s = [
         f1_score(frmt_labels, ft_frmt_preds, pos_label=0) * 100,
         f1_score(frmt_labels, ftq_frmt_preds, pos_label=0) * 100,
+        f1_score(frmt_labels, ftp_frmt_preds, pos_label=0) * 100,
         f1_score(frmt_labels, bert_frmt_preds, pos_label=0) * 100,
         f1_score(frmt_labels, lvi_frmt_preds, pos_label=0) * 100,
         f1_score(frmt_labels, pv_frmt_preds, pos_label=0) * 100,
